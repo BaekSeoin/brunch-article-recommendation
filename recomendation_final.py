@@ -12,7 +12,8 @@ class Recommendation(object) :
     Total2 = []
     following_list = dict()
     delete_article_check = dict() # 여기에는 현재 존재하는 article이 들어감. 삭제되었으면 이 리스트에 없음
-    
+    new_user_writer_count = dict()
+
     def __init__(self):
         make_user_json_file()
     
@@ -28,7 +29,7 @@ class Recommendation(object) :
         article = dict()
 
         test_users = []
-        path2 = './res/predict/' + 'test.users.txt'
+        path2 = './res/predict/' + 'test.users'
         with open(path2,'r') as test:
             for line in test:
                 line = line.rstrip()
@@ -47,6 +48,10 @@ class Recommendation(object) :
                             except:
                                 self.USER[key] = []
                                 self.USER[key].append(k)
+        with open(file_path,'r') as file_name:
+            for users in file_name:
+                users = ujson.loads(users)
+                for key, values in users.items():
                     for k,v in values.items():
                         a = k.split('_')
                         writer = a[0]
@@ -75,7 +80,7 @@ class Recommendation(object) :
         for i,j in self.USER.items():
             USER_writer[i] = dict()
             for k in j:
-                a = k.split('_')
+                a = str(k).split('_')
                 try:
                     USER_writer[i][a[0]] +=1
                 except:
@@ -116,7 +121,7 @@ class Recommendation(object) :
         for i,j in USER_ver2.items():
             USER_writer_ver2[i] = dict()
             for k in j:
-                a = k.split('_')
+                a = str(k).split('_')
                 try:
                     USER_writer_ver2[i][a[0]] +=1
                 except:
@@ -132,7 +137,6 @@ class Recommendation(object) :
             self.USER_writer2_ver2[k] = []
             for a,b in v.items():
                 self.USER_writer2_ver2[k].append((a,b))
-
         #정렬
         for k,v in self.USER_writer2_ver2.items():
             v =  sorted(v, key=operator.itemgetter(1), reverse=True)
@@ -152,20 +156,29 @@ class Recommendation(object) :
                         USER_article[i]=dict()
                         USER_article[i][k] =0
                         USER_article[i][k] +=1
-
         #각 유저에 대해 읽은 작가와 그 작가의 어떤 글을 읽었는지 확인
         for k,v in USER_article.items():
             self.user_writer_count[k] = dict()
             for key in v.items():
-                a = key.split('_')
+                a = str(key).split('_')
                 try:
                     self.user_writer_count[k][a[0]].append(key)
                 except:
                     self.user_writer_count[k][a[0]] = []
                     self.user_writer_count[k][a[0]].append(key)
 
+        #user_writer_count 를 독자가 가장 많은 글을 읽은 작가 순으로 정렬
+        for i,j in self.user_writer_count.items():
+            #print(i,j)
+            self.new_user_writer_count[i] = []
+            for k,v in j.items():
+                length = [len(v)] + v
+                #print(length)
+                self.new_user_writer_count[i].append(length)
+            self.new_user_writer_count[i] = sorted(self.new_user_writer_count[i], key = operator.itemgetter(0),reverse = True)
+
         #가장 인기있는 글을 확인하기 위해/전체기간동안의 독자의 글 방문 count
-        path4 = 'user_json.txt'
+        path4 = './user_json.txt'
 
         read2 = {}
         with open(path4,'r') as F:
@@ -186,7 +199,7 @@ class Recommendation(object) :
             self.Total2.append(t[0])
         
         #following 한 작가가 있는지 확인
-        file = r'users.json.txt'
+        file = r'./res/users.json'
 
         with open(file,'r') as fp:
             for line in fp:
@@ -194,7 +207,7 @@ class Recommendation(object) :
                 self.following_list[line['id']] = line['following_list']
                 
         #삭제된 글 확인
-        file = r'metadata.json.txt'
+        file = r'./res/metadata.json'
         with open(file,'r') as fp:
             for i in fp:
                 i = ujson.loads(i)
@@ -202,6 +215,7 @@ class Recommendation(object) :
               
     def recommend(self, userlist_path, out_path):
         users = [u.strip() for u in open(userlist_path)]
+        self.make_data()
         self.make_result(out_path, users)
 
 
@@ -214,33 +228,36 @@ class Recommendation(object) :
                 
                 #1. 내가 읽은 글 번호 앞/뒤 글 추천
                 try:
-                    read_list = self.user_writer_count[dev]
-                    for key, value in read_list.items():
+                    read_list = self.new_user_writer_count[dev]
+                    #print(read_list)
+                    for read in read_list:
+                        range_check = [0 for i in range(10000)]
+                        Min = 10000
+                        Max = 0
+                        if read[0] > 1:
+                            for Range in read[1:]:
+                                split = Range.split('_')
+                                writer = split[0]
+                                I = int(split[1])
+                                range_check[I] = 1
+                                if I < Min:
+                                    Min = I
+                                if I > Max:
+                                    Max = I
+                            if Min == 1:
+                                Min = 2
 
-                        if len(value) > 1:
-                            for i in value:
-                                ww = i.split('_')
-                                down = ww[0] + '_' +str(int(ww[1])-1)
-                                up = ww[0] + '_' +str(int(ww[1])+1)
-                                up2 = ww[0] + '_' +str(int(ww[1])+2)
-                                if (down not in value) and ((int(ww[1])-1) != 0) and (down not in person) and check_delete(down):
-                                    total_count +=1
-                                    if total_count < 100:                                
-                                        person.append(down)
-                                    else:
-                                        person.append(down)
+                            for add in range(Max+1, Min-2,-1):
+                                add_list = range_check[add]
+                                Article = writer + '_' + str(add)
+                                if (add_list == 0) and (Article not in person) and (check_delete(Article)):
+                                    total_count+=1
+                                    person.append(Article)                            
+                                    if total_count ==100:
                                         break
-                                if (up not in value) and (up2 not in value) and (up not in person) and check_delete(up): #중복체크 237, 239 일 경우 238을 한 번만 세도록
-                                    total_count +=1
-                                    if total_count < 100:           
-                                        person.append(up)
-                                    else:
-                                        person.append(up)
-                                        break
-                        if total_count == 100:
-                            break
-                    
-                                
+
+                            if total_count == 100:
+                                break   
                 except:
                     pass
                 
