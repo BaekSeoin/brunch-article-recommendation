@@ -4,28 +4,24 @@ import ujson
 from preprocessing import make_user_json_file
 
 class Recommendation(object) :
-    USER = dict()
-    article2 = dict()
-    USER_writer2 = dict()
-    USER_writer2_ver2 = dict()
-    user_writer_count = dict()
-    Total2 = []
-    following_list = dict()
-    delete_article_check = dict() # 여기에는 현재 존재하는 article이 들어감. 삭제되었으면 이 리스트에 없음
-    new_user_writer_count = dict()
 
     def __init__(self):
         make_user_json_file()
     
     #삭제 리스트 확인
-    def check_delete(self, x):
+    def check_delete(self, delete_article_check ,x):
         try:
-            A = self.delete_article_check[x]
+            A = delete_article_check[x]
             return True
         except:
             return False 
+              
+    def recommend(self, userlist_path, out_path):
+        users = [u.strip() for u in open(userlist_path)]
+        self.make_result(out_path, users)
 
-    def make_data(self) :
+
+    def make_result(self, out_path, result_users) :
         article = dict()
 
         test_users = []
@@ -36,6 +32,7 @@ class Recommendation(object) :
                 test_users.append(line)
 
         #test 유저가 전체 기간동안 읽은 글 확인
+        USER = dict()
         file_path = 'user_json.txt'
         with open(file_path,'r') as file_name:
             for users in file_name:
@@ -44,10 +41,10 @@ class Recommendation(object) :
                     if key in test_users:                    
                         for k,v in values.items():
                             try:
-                                self.USER[key].append(k)
+                                USER[key].append(k)
                             except:
-                                self.USER[key] = []
-                                self.USER[key].append(k)
+                                USER[key] = []
+                                USER[key].append(k)
         with open(file_path,'r') as file_name:
             for users in file_name:
                 users = ujson.loads(users)
@@ -67,17 +64,18 @@ class Recommendation(object) :
                                 article[writer][k] = dict()
                                 article[writer][k] = v
 
+        article2 = dict()
         for k,v in article.items():
-            self.article2[k] = []
+            article2[k] = []
             for a,b in v.items():
-                self.article2[k].append((a,b))
+                article2[k].append((a,b))
 
-        for k,v in self.article2.items():
+        for k,v in article2.items():
             v =  sorted(v, key=operator.itemgetter(1), reverse=True)
-            self.article2[k] = v
+            article2[k] = v
 
         USER_writer = dict()
-        for i,j in self.USER.items():
+        for i,j in USER.items():
             USER_writer[i] = dict()
             for k in j:
                 a = str(k).split('_')
@@ -92,15 +90,16 @@ class Recommendation(object) :
                         USER_writer[i][a[0]] =0
                         USER_writer[i][a[0]] +=1
 
+        USER_writer2 = dict()
         for k,v in USER_writer.items():
-            self.USER_writer2[k] = []
+            USER_writer2[k] = []
             for a,b in v.items():
-                self.USER_writer2[k].append((a,b))
+                USER_writer2[k].append((a,b))
 
         #정렬/ 많이 읽은 작가 순서대로 정렬
-        for k,v in self.USER_writer2.items():
+        for k,v in USER_writer2.items():
             v =  sorted(v, key=operator.itemgetter(1), reverse=True)
-            self.USER_writer2[k] = v
+            USER_writer2[k] = v
             
         USER_ver2 = dict()
         file_path = 'user_json2.txt'
@@ -133,14 +132,15 @@ class Recommendation(object) :
                         USER_writer_ver2[i][a[0]] =0
                         USER_writer_ver2[i][a[0]] +=1
         
+        USER_writer2_ver2 = dict()
         for k,v in USER_writer_ver2.items():
-            self.USER_writer2_ver2[k] = []
+            USER_writer2_ver2[k] = []
             for a,b in v.items():
-                self.USER_writer2_ver2[k].append((a,b))
+                USER_writer2_ver2[k].append((a,b))
         #정렬
-        for k,v in self.USER_writer2_ver2.items():
+        for k,v in USER_writer2_ver2.items():
             v =  sorted(v, key=operator.itemgetter(1), reverse=True)
-            self.USER_writer2_ver2[k] = v
+            USER_writer2_ver2[k] = v
                 
         USER_article = dict()
         for i,j in USER_ver2.items():
@@ -157,25 +157,28 @@ class Recommendation(object) :
                         USER_article[i][k] =0
                         USER_article[i][k] +=1
         #각 유저에 대해 읽은 작가와 그 작가의 어떤 글을 읽었는지 확인
+        user_writer_count = dict()
         for k,v in USER_article.items():
-            self.user_writer_count[k] = dict()
+            user_writer_count[k] = dict()
             for key in v.items():
                 a = str(key).split('_')
                 try:
-                    self.user_writer_count[k][a[0]].append(key)
+                    user_writer_count[k][a[0]].append(key)
                 except:
-                    self.user_writer_count[k][a[0]] = []
-                    self.user_writer_count[k][a[0]].append(key)
+                    user_writer_count[k][a[0]] = []
+                    user_writer_count[k][a[0]].append(key)
 
         #user_writer_count 를 독자가 가장 많은 글을 읽은 작가 순으로 정렬
-        for i,j in self.user_writer_count.items():
+        new_user_writer_count = dict()
+        for i,j in user_writer_count.items():
             #print(i,j)
-            self.new_user_writer_count[i] = []
+            new_user_writer_count[i] = []
             for k,v in j.items():
                 length = [len(v)] + v
                 #print(length)
-                self.new_user_writer_count[i].append(length)
-            self.new_user_writer_count[i] = sorted(self.new_user_writer_count[i], key = operator.itemgetter(0),reverse = True)
+                new_user_writer_count[i].append(length)
+
+            new_user_writer_count[i] = sorted(new_user_writer_count[i], key = operator.itemgetter(0),reverse = True)
 
         #가장 인기있는 글을 확인하기 위해/전체기간동안의 독자의 글 방문 count
         path4 = './user_json.txt'
@@ -195,50 +198,45 @@ class Recommendation(object) :
         #가장 많이 읽힌 글 순서대로 정렬
         Total = sorted(read2.items(), reverse=True,key=lambda t : t[1])
 
+        Total2 = []
         for t in Total:
-            self.Total2.append(t[0])
+            Total2.append(t[0])
         
         #following 한 작가가 있는지 확인
         file = r'./res/users.json'
-
+        following_list = dict()
         with open(file,'r') as fp:
             for line in fp:
                 line = ujson.loads(line)
-                self.following_list[line['id']] = line['following_list']
+                following_list[line['id']] = line['following_list']
                 
         #삭제된 글 확인
+        delete_article_check = dict()
         file = r'./res/metadata.json'
         with open(file,'r') as fp:
             for i in fp:
                 i = ujson.loads(i)
-                self.delete_article_check[i["id"]] = True
-              
-    def recommend(self, userlist_path, out_path):
-        users = [u.strip() for u in open(userlist_path)]
-        self.make_data()
-        self.make_result(out_path, users)
+                delete_article_check[i["id"]] = True
 
-
-    def make_result(self, out_path, users) :
         with open(out_path,'w') as fp:
-            for n_count ,dev in enumerate(users):
+            for n_count ,dev in enumerate(result_users):
                 person = []
                 total_count = 0
                 print(dev,file = fp,end = ' ')
                 
                 #1. 내가 읽은 글 번호 앞/뒤 글 추천
                 try:
-                    read_list = self.new_user_writer_count[dev]
-                    #print(read_list)
+                    read_list = new_user_writer_count[dev]
                     for read in read_list:
                         range_check = [0 for i in range(10000)]
                         Min = 10000
                         Max = 0
+
                         if read[0] > 1:
                             for Range in read[1:]:
-                                split = Range.split('_')
-                                writer = split[0]
-                                I = int(split[1])
+                                split_str = str(Range[0]).split('_')
+                                writer = split_str[0]
+                                I = int(split_str[1])
                                 range_check[I] = 1
                                 if I < Min:
                                     Min = I
@@ -250,7 +248,7 @@ class Recommendation(object) :
                             for add in range(Max+1, Min-2,-1):
                                 add_list = range_check[add]
                                 Article = writer + '_' + str(add)
-                                if (add_list == 0) and (Article not in person) and (check_delete(Article)):
+                                if (add_list == 0) and (Article not in person) and (self.check_delete(delete_article_check, Article)):
                                     total_count+=1
                                     person.append(Article)                            
                                     if total_count ==100:
@@ -271,14 +269,14 @@ class Recommendation(object) :
                     continue
                                         
                 #2. 내가 읽은 작가 리스트 중 많이 읽은 순서대로 추천/기간:2/14~3/1
-                if dev in self.USER_writer2_ver2:
-                    w_List = self.USER_writer2_ver2[dev] # 내가 읽은 작가 리스트_많이 읽은 순서대로
+                if dev in USER_writer2_ver2:
+                    w_List = USER_writer2_ver2[dev] # 내가 읽은 작가 리스트_많이 읽은 순서대로
                     R = 15
                     for w in w_List:
-                        pop_read = self.article2[w[0]] #해당 작가가 쓴 글, 조회수가 많은 순서대로
+                        pop_read = article2[w[0]] #해당 작가가 쓴 글, 조회수가 많은 순서대로
                         cc = 0
                         for i in pop_read:
-                            if (i[0] not in self.USER[dev]) and (i[0] not in person) and self.check_delete(i[0]): #작가의 글 중 내가 안읽은 글을 추천
+                            if (i[0] not in USER[dev]) and (i[0] not in person) and self.check_delete(delete_article_check, i[0]): #작가의 글 중 내가 안읽은 글을 추천
                                 total_count +=1
                                 if total_count <100:
                                     person.append(i[0])
@@ -295,14 +293,14 @@ class Recommendation(object) :
                                     break
 
                 #3. 내가 읽은 작가 리스트 중 많이 읽은 순서대로 추천/기간:전체기간
-                if (total_count < 100) and (dev in self.USER_writer2):
-                    w_List = self.USER_writer2[dev] # 내가 읽은 작가 리스트_많이 읽은 순서대로
+                if (total_count < 100) and (dev in USER_writer2):
+                    w_List = USER_writer2[dev] # 내가 읽은 작가 리스트_많이 읽은 순서대로
                     R = 15
                     for w in w_List:
-                        pop_read = self.article2[w[0]] #해당 작가가 쓴 글, 조회수가 많은 순서대로
+                        pop_read = article2[w[0]] #해당 작가가 쓴 글, 조회수가 많은 순서대로
                         cc = 0
                         for i in pop_read:
-                            if (i[0] not in self.USER[dev]) and (i[0] not in person) and self.check_delete(i[0]): #작가의 글 중 내가 안읽은 글을 추천
+                            if (i[0] not in USER[dev]) and (i[0] not in person) and self.check_delete(delete_article_check, i[0]): #작가의 글 중 내가 안읽은 글을 추천
                                 total_count +=1
                                 if total_count <100:
                                     person.append(i[0])
@@ -319,8 +317,8 @@ class Recommendation(object) :
                                     break
                 
                 #4. 내가 팔로잉한 작가의 글 추천 
-                if (total_count <100) and (dev in self.following_list) and (len(self.following_list[dev]) >0):
-                    w_List = self.following_list[dev] 
+                if (total_count <100) and (dev in following_list) and (len(following_list[dev]) >0):
+                    w_List = following_list[dev] 
                     R = 15
                     for w in w_List:
                         try:
@@ -329,7 +327,7 @@ class Recommendation(object) :
                             continue
                         cc = 0
                         for i in pop_read:
-                            if i[0] not in person and self.check_delete(i[0]):
+                            if i[0] not in person and self.check_delete(delete_article_check, i[0]):
                                 total_count +=1
                                 if total_count <100:
                                     person.append(i[0])
@@ -346,8 +344,8 @@ class Recommendation(object) :
                                     break
                     if total_count < 100:
                         index = 0
-                        for i in self.Total2:
-                            if (i not in person) and (self.check_delete(i)):
+                        for i in Total2:
+                            if (i not in person) and (self.check_delete(delete_article_check, i)):
                                 if index != (99-total_count):
                                     person.append(i)
                                     index +=1
@@ -358,7 +356,7 @@ class Recommendation(object) :
                 #5. 모든 사람이 가장 많이 읽은 글 추천                   
                 if total_count < 100:  
                     index = 0
-                    for i in self.Total2:
+                    for i in Total2:
                         if (index !=99) and (i not in person):
                             person.append(i)
                             index+=1
