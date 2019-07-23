@@ -160,8 +160,8 @@ class Recommendation(object) :
         user_writer_count = dict()
         for k,v in USER_article.items():
             user_writer_count[k] = dict()
-            for key in v.items():
-                a = str(key).split('_')
+            for key, value in v.items():
+                a = key.split('_')
                 try:
                     user_writer_count[k][a[0]].append(key)
                 except:
@@ -234,7 +234,7 @@ class Recommendation(object) :
 
                         if read[0] > 1:
                             for Range in read[1:]:
-                                split_str = str(Range[0]).split('_')
+                                split_str = Range.split('_')
                                 writer = split_str[0]
                                 I = int(split_str[1])
                                 range_check[I] = 1
