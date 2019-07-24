@@ -1,6 +1,7 @@
 import fire
 import operator
 import ujson
+from collections import OrderedDict
 from preprocessing import make_user_json_file
 
 class Recommendation(object) :
@@ -35,7 +36,7 @@ class Recommendation(object) :
                 test_users.append(line)
 
         #test 유저가 전체 기간동안 읽은 글 확인
-        USER = dict()
+        USER = OrderedDict()
         file_path = 'user_json.txt'
         with open(file_path,'r') as file_name:
             for users in file_name:
@@ -48,7 +49,7 @@ class Recommendation(object) :
                             except:
                                 USER[key] = []
                                 USER[key].append(k)
-        article = dict()
+        article = OrderedDict()
         file_path = 'user_json2.txt'
         with open(file_path,'r') as file_name:
             for users in file_name:
@@ -62,14 +63,14 @@ class Recommendation(object) :
                             article[writer][k] +=v
                         except:
                             try:
-                                article[writer][k] = dict()
+                                article[writer][k] = OrderedDict()
                                 article[writer][k] = v
                             except:
-                                article[writer] = dict()
-                                article[writer][k] = dict()
+                                article[writer] = OrderedDict()
+                                article[writer][k] = OrderedDict()
                                 article[writer][k] = v
 
-        article2 = dict()
+        article2 = OrderedDict()
         for k,v in article.items():
             article2[k] = []
             for a,b in v.items():
@@ -79,11 +80,11 @@ class Recommendation(object) :
             a = sorted(v, reverse=True,key= lambda x : (x[1],x[0]))
             article2[k] = a
 
-        USER_writer = dict()
+        USER_writer = OrderedDict()
         for i,j in USER.items():
-            USER_writer[i] = dict()
+            USER_writer[i] = OrderedDict()
             for k in j:
-                a = str(k).split('_')
+                a = k.split('_')
                 try:
                     USER_writer[i][a[0]] +=1
                 except:
@@ -91,11 +92,11 @@ class Recommendation(object) :
                         USER_writer[i][a[0]] =0
                         USER_writer[i][a[0]] +=1
                     except:
-                        USER_writer[i]=dict()
+                        USER_writer[i]=OrderedDict()
                         USER_writer[i][a[0]] =0
                         USER_writer[i][a[0]] +=1
 
-        USER_writer2 = dict()
+        USER_writer2 = OrderedDict()
         for k,v in USER_writer.items():
             USER_writer2[k] = []
             for a,b in v.items():
@@ -103,10 +104,10 @@ class Recommendation(object) :
 
         #정렬/ 많이 읽은 작가 순서대로 정렬
         for k,v in USER_writer2.items():
-            v =  sorted(v, key=operator.itemgetter(1), reverse=True)
+            v = sorted(v, key= lambda x : (x[1],x[0]), reverse=True)
             USER_writer2[k] = v
             
-        USER_ver2 = dict()
+        USER_ver2 = OrderedDict()
         file_path = 'user_json2.txt'
         with open(file_path,'r') as file_name:
             for users in file_name:
@@ -121,11 +122,11 @@ class Recommendation(object) :
                                 USER_ver2[key].append(k)
         
         #각 유저별로 작가수 count
-        USER_writer_ver2 = dict()
+        USER_writer_ver2 = OrderedDict()
         for i,j in USER_ver2.items():
-            USER_writer_ver2[i] = dict()
+            USER_writer_ver2[i] = OrderedDict()
             for k in j:
-                a = str(k).split('_')
+                a = k.split('_')
                 try:
                     USER_writer_ver2[i][a[0]] +=1
                 except:
@@ -133,11 +134,11 @@ class Recommendation(object) :
                         USER_writer_ver2[i][a[0]] =0
                         USER_writer_ver2[i][a[0]] +=1
                     except:
-                        USER_writer_ver2[i]=dict()
+                        USER_writer_ver2[i]=OrderedDict()
                         USER_writer_ver2[i][a[0]] =0
                         USER_writer_ver2[i][a[0]] +=1
         
-        USER_writer2_ver2 = dict()
+        USER_writer2_ver2 = OrderedDict()
         for k,v in USER_writer_ver2.items():
             USER_writer2_ver2[k] = []
             for a,b in v.items():
@@ -148,9 +149,9 @@ class Recommendation(object) :
             USER_writer2_ver2[k] = v
 
                 
-        USER_article = dict()
+        USER_article = OrderedDict()
         for i,j in USER_ver2.items():
-            USER_article[i] = dict()
+            USER_article[i] = OrderedDict()
             for k in j:
                 try:
                     USER_article[i][k] +=1
@@ -159,18 +160,18 @@ class Recommendation(object) :
                         USER_article[i][k] =0
                         USER_article[i][k] +=1
                     except:
-                        USER_article[i]=dict()
+                        USER_article[i]=OrderedDict()
                         USER_article[i][k] =0
                         USER_article[i][k] +=1
 
         for test in test_users:
             if test not in USER_article:
-                USER_article[test] = dict()
+                USER_article[test] = OrderedDict()
 
         #각 유저에 대해 읽은 작가와 그 작가의 어떤 글을 읽었는지 확인
-        user_writer_count = dict()
+        user_writer_count = OrderedDict()
         for k,v in USER_article.items():
-            user_writer_count[k] = dict()
+            user_writer_count[k] = OrderedDict()
             for key, value in v.items():
                 a = key.split('_')
                 try:
@@ -180,7 +181,7 @@ class Recommendation(object) :
                     user_writer_count[k][a[0]].append(key)
 
         #user_writer_count 를 독자가 가장 많은 글을 읽은 작가 순으로 정렬
-        new_user_writer_count = dict()
+        new_user_writer_count = OrderedDict()
         for i,j in user_writer_count.items():
             new_user_writer_count[i] = []
             for k,v in j.items():
@@ -192,7 +193,7 @@ class Recommendation(object) :
         #가장 인기있는 글을 확인하기 위해/전체기간동안의 독자의 글 방문 count
         path4 = './user_json2.txt'
 
-        read2 = {}
+        read2 = OrderedDict()
         with open(path4,'r') as F:
             for x in F:
                 x = ujson.loads(x)
@@ -213,14 +214,14 @@ class Recommendation(object) :
         
         #following 한 작가가 있는지 확인
         file = r'./res/users.json'
-        following_list = dict()
+        following_list = OrderedDict()
         with open(file,'r') as fp:
             for line in fp:
                 line = ujson.loads(line)
                 following_list[line['id']] = line['following_list']
                 
         #삭제된 글 확인
-        delete_article_check = dict()
+        delete_article_check = OrderedDict()
         file = r'./res/metadata.json'
         with open(file,'r') as fp:
             for i in fp:
@@ -342,3 +343,4 @@ class Recommendation(object) :
 
 if __name__ == '__main__':
     fire.Fire(Recommendation)
+
