@@ -20,10 +20,10 @@ $> tree -d
 ### 2. 실행방법
 - predict/dev.users에 대한 추천 결과를 생성
 ```
-$> python recomendation_final.py recommend ./res/predict/dev.users recommend.txt
+$> python recommendation_final.py recommend ./res/predict/dev.users recommend.txt
 ```
 
 - predict/test.users에 대한 추천 결과를 생성
 ```
-$> python recomendation_final.py recommend ./res/predict/test.users recommend.txt
+$> python recommendation_final.py recommend ./res/predict/test.users recommend.txt
 ```
